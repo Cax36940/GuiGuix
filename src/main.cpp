@@ -6,6 +6,7 @@
 
 int window_width = 1200;
 int window_height = 800;
+int cursor = MOUSE_CURSOR_DEFAULT;
 
 enum class FontMode
 {
@@ -55,6 +56,51 @@ Font get_font(float size, FontMode mode)
     return custom_font.font;
 }
 
+void Frame(Rectangle rect, Color frame_color, float frame_width = 1.0f)
+{
+    if (frame_width > 0.0f)
+    {
+        DrawRectangle(rect.x, rect.y, rect.width, frame_width, frame_color);
+        DrawRectangle(rect.x, rect.y, frame_width, rect.height, frame_color);
+        DrawRectangle(rect.x, rect.y + rect.height - frame_width, rect.width, frame_width, frame_color);
+        DrawRectangle(rect.x + rect.width - frame_width, rect.y, frame_width, rect.height, frame_color);
+    }
+}
+
+bool Button(Rectangle rect, const char *text = "Default", bool selected = false)
+{
+    const float font_size = 20.0f;
+    const Font font = get_font(font_size, FontMode::BOLD);
+    const float frame_width = 1.0f;
+
+    const bool hovered = CheckCollisionPointRec(GetMousePosition(), rect);
+    const bool clicked = hovered && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE));
+
+    Color color = BLACK;
+    Color font_color = WHITE;
+    if (selected || hovered)
+    {
+        color = WHITE;
+        font_color = BLACK;
+    }
+
+    if (hovered)
+    {
+        cursor = MOUSE_CURSOR_POINTING_HAND;
+    }
+
+    DrawRectangleRec(rect, color);
+    Frame(rect, WHITE, frame_width);
+
+    // Draw Text
+    const Vector2 text_size = MeasureTextEx(font, text, font_size, 0);
+    Vector2 text_pos;
+    text_pos.x = rect.x + rect.width / 2 - text_size.x / 2;
+    text_pos.y = rect.y + rect.height / 2 - text_size.y / 2 + 3.0f;
+    DrawTextEx(font, text, text_pos, font_size, 0, font_color);
+    return clicked;
+}
+
 int main()
 {
     InitWindow(window_width, window_height, "GuiGuix");
@@ -67,6 +113,11 @@ int main()
         ClearBackground(BLACK);
         DrawTextEx(get_font(20.0f, FontMode::NONE), "Hello", {100.0f, 100.0f}, 20.0f, 0.0f, WHITE);
         DrawTextEx(get_font(20.0f, FontMode::BOLD), "World", {100.0f, 150.0f}, 20.0f, 0.0f, WHITE);
+
+        if (Button({200.0f, 100.0f, 100.0f, 50.0f}, "Hello"))
+        {
+            printf("Hello World\n");
+        }
 
         EndDrawing();
     }
