@@ -108,6 +108,9 @@ int main()
 
     while (!WindowShouldClose())
     {
+
+        cursor = MOUSE_CURSOR_DEFAULT;
+
         BeginDrawing();
 
         ClearBackground(BLACK);
@@ -118,6 +121,8 @@ int main()
         {
             printf("Hello World\n");
         }
+
+        SetMouseCursor(cursor);
 
         EndDrawing();
     }
