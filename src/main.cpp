@@ -323,7 +323,7 @@ float draw_category_page_profiles(float y)
     y -= 20.0f;
     for (std::vector<ProfileStruct>::iterator it = profiles.begin(); it != profiles.end(); ++it)
     {
-        const ProfileStruct &profile = *it;
+        ProfileStruct &profile = *it;
         y += 40.0f;
         y += TextBox({40.0f, y}, profile.name.c_str(), style_profile_name);
         y += 10.0f;
@@ -341,8 +341,16 @@ float draw_category_page_profiles(float y)
                 y += TextBox({40.0f, y}, "Installed packages:", style_profile_name);
             }
             y += 10.0f;
-            for (const std::string &package_name : profile.packages)
+            for (std::vector<std::string>::iterator pack_it = profile.packages.begin(); pack_it != profile.packages.end(); ++pack_it)
             {
+                const std::string &package_name = *pack_it;
+                if (Button({40.0f, y - 4.0f, 20.0f, 20.0f}, "x"))
+                {
+                    const std::string command = "guix package -p " + profile.folder_path + "-q -r " + package_name;
+                    runCommand(command.c_str());
+                    profile.packages.erase(pack_it);
+                }
+
                 y += TextBox({70.0f, y}, ("- " + package_name).c_str(), style_profile_package);
                 y += 10.0f;
             }
