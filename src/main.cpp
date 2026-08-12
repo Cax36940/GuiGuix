@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <cmath>
 #include <stdio.h>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -176,6 +177,13 @@ constexpr TextStyle style_application_title = {
     .text_box_width = 1920.0f,
     .right_margin = 40.0f};
 
+constexpr TextStyle style_application_subtitle = {
+    .font_size = 16.0f,
+    .font_mode = FontMode::NONE,
+    .font_color = GRAY,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
 // Just used to draw text from string view
 void DrawTextView(Font font, const std::string_view &text, Vector2 position, float fontSize, float spacing, Color tint)
 {
@@ -253,11 +261,34 @@ float TextBox(Vector2 position, const char *text, const TextStyle &style)
     return textbox_height;
 }
 
+std::string runCommand(const char *command)
+{
+    FILE *pipe = popen(command, "r");
+    char buffer[4096];
+    std::string result;
+
+    while (fgets(buffer, sizeof(buffer), pipe))
+    {
+        result += buffer;
+    }
+
+    pclose(pipe);
+    return result;
+}
+
 int main()
 {
     InitWindow(window_width, window_height, "GuiGuix");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
+
+    std::string guix_version = runCommand("guix --version | head --lines=1");
+    bool guix_exists = true;
+    if (guix_version.substr(0, 4) != "guix")
+    {
+        guix_version = "GUIX COMMAND NOT FOUND";
+        guix_exists = false;
+    }
 
     while (!WindowShouldClose())
     {
@@ -273,7 +304,17 @@ int main()
 
         ClearBackground(BLACK);
 
-        TextBox({40.0f, 40.0f}, "GuiGuix", style_application_title);
+        float y = 0.0f;
+        y += 40.0f;
+        y += TextBox({40.0f, y}, "GuiGuix", style_application_title);
+        y += 5.0f;
+        y += TextBox({40.0f, y}, guix_version.c_str(), style_application_subtitle);
+
+        if (!guix_exists)
+        {
+            EndDrawing();
+            continue;
+        }
 
         DrawTextEx(get_font(20.0f, FontMode::NONE), "Hello", {100.0f, 100.0f}, 20.0f, 0.0f, WHITE);
         DrawTextEx(get_font(20.0f, FontMode::BOLD), "World", {100.0f, 150.0f}, 20.0f, 0.0f, WHITE);
