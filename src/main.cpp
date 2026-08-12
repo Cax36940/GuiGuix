@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include <cmath>
+#include <functional>
 #include <stdio.h>
 #include <string>
 #include <string_view>
@@ -184,6 +185,13 @@ constexpr TextStyle style_application_subtitle = {
     .text_box_width = 1920.0f,
     .right_margin = 40.0f};
 
+constexpr TextStyle style_page_title = {
+    .font_size = 28.0f,
+    .font_mode = FontMode::BOLD,
+    .font_color = WHITE,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
 // Just used to draw text from string view
 void DrawTextView(Font font, const std::string_view &text, Vector2 position, float fontSize, float spacing, Color tint)
 {
@@ -261,6 +269,63 @@ float TextBox(Vector2 position, const char *text, const TextStyle &style)
     return textbox_height;
 }
 
+float draw_category_page_profiles(float y)
+{
+    const float initial_y = y;
+    y += 20.0f;
+    y += TextBox({40.0f, y}, "Profiles", style_page_title);
+    return initial_y - y;
+}
+
+float draw_category_page_packages(float y)
+{
+    const float initial_y = y;
+    y += 20.0f;
+    y += TextBox({40.0f, y}, "Packages", style_page_title);
+    return initial_y - y;
+}
+
+float draw_category_page_store(float y)
+{
+    const float initial_y = y;
+    y += 20.0f;
+    y += TextBox({40.0f, y}, "Store", style_page_title);
+    return initial_y - y;
+}
+
+static std::function<float(float)> draw_current_page = draw_category_page_profiles;
+
+bool operator==(const std::function<float(float)> &a, const std::function<float(float)> &b)
+{
+    return *a.target<float (*)(float)>() == *b.target<float (*)(float)>();
+}
+
+float NavBar(float y)
+{
+    const float button_height = 50.0f;
+    const float button_width = window_width / 3.0f;
+    Rectangle rect = {0.0f, y, button_width, button_height};
+
+    if (Button(rect, "Profiles", draw_current_page == draw_category_page_profiles))
+    {
+        draw_current_page = draw_category_page_profiles;
+    }
+    rect.x += button_width;
+
+    if (Button(rect, "Packages", draw_current_page == draw_category_page_packages))
+    {
+        draw_current_page = draw_category_page_packages;
+    }
+    rect.x += button_width;
+
+    if (Button(rect, "Store", draw_current_page == draw_category_page_store))
+    {
+        draw_current_page = draw_category_page_store;
+    }
+
+    return button_height;
+}
+
 std::string runCommand(const char *command)
 {
     FILE *pipe = popen(command, "r");
@@ -316,13 +381,8 @@ int main()
             continue;
         }
 
-        DrawTextEx(get_font(20.0f, FontMode::NONE), "Hello", {100.0f, 100.0f}, 20.0f, 0.0f, WHITE);
-        DrawTextEx(get_font(20.0f, FontMode::BOLD), "World", {100.0f, 150.0f}, 20.0f, 0.0f, WHITE);
-
-        if (Button({200.0f, 100.0f, 100.0f, 50.0f}, "Hello"))
-        {
-            printf("Hello World\n");
-        }
+        y += NavBar(y);
+        draw_current_page(y);
 
         SetMouseCursor(cursor);
 
