@@ -104,10 +104,16 @@ bool Button(Rectangle rect, const char *text = "Default", bool selected = false)
 int main()
 {
     InitWindow(window_width, window_height, "GuiGuix");
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
 
     while (!WindowShouldClose())
     {
+        if (IsWindowResized())
+        {
+            window_width = GetScreenWidth();
+            window_height = GetScreenHeight();
+        }
 
         cursor = MOUSE_CURSOR_DEFAULT;
 
