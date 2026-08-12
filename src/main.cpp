@@ -192,6 +192,20 @@ constexpr TextStyle style_page_title = {
     .text_box_width = 1920.0f,
     .right_margin = 40.0f};
 
+constexpr TextStyle style_profile_path = {
+    .font_size = 20.0f,
+    .font_mode = FontMode::NONE,
+    .font_color = GRAY,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
+constexpr TextStyle style_profile_name = {
+    .font_size = 20.0f,
+    .font_mode = FontMode::BOLD,
+    .font_color = WHITE,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
 // Just used to draw text from string view
 void DrawTextView(Font font, const std::string_view &text, Vector2 position, float fontSize, float spacing, Color tint)
 {
@@ -269,11 +283,30 @@ float TextBox(Vector2 position, const char *text, const TextStyle &style)
     return textbox_height;
 }
 
+struct ProfileStruct
+{
+    std::string folder_path;
+    std::string name;
+};
+
+std::vector<ProfileStruct> profiles;
+
 float draw_category_page_profiles(float y)
 {
     const float initial_y = y;
     y += 20.0f;
     y += TextBox({40.0f, y}, "Profiles", style_page_title);
+
+    y -= 20.0f;
+    for (const ProfileStruct &profile : profiles)
+    {
+        y += 40.0f;
+        y += TextBox({40.0f, y}, profile.name.c_str(), style_profile_name);
+        y += 10.0f;
+        y += TextBox({40.0f, y}, profile.folder_path.c_str(), style_profile_path);
+        y += 10.0f;
+    }
+
     return initial_y - y;
 }
 
@@ -341,6 +374,33 @@ std::string runCommand(const char *command)
     return result;
 }
 
+void init_profiles()
+{
+    profiles.clear();
+    const std::string profiles_str = runCommand("guix package --list-profiles");
+    const char *profiles_raw = profiles_str.data();
+    size_t begin = 0;
+    size_t end = 0;
+    while (profiles_raw[end])
+    {
+        size_t name_pos = 0;
+        while (profiles_raw[end] != '\n' && profiles_raw[end] != '\0')
+        {
+            if (profiles_raw[end] == '/')
+            {
+                name_pos = end + 1;
+            }
+            ++end;
+        }
+
+        const std::string path = profiles_str.substr(begin, end - begin);
+        const std::string name = profiles_str.substr(name_pos, end - name_pos);
+        profiles.push_back({path, name});
+        end++;
+        begin = end;
+    }
+}
+
 int main()
 {
     InitWindow(window_width, window_height, "GuiGuix");
@@ -354,6 +414,8 @@ int main()
         guix_version = "GUIX COMMAND NOT FOUND";
         guix_exists = false;
     }
+
+    init_profiles();
 
     while (!WindowShouldClose())
     {
