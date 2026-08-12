@@ -283,6 +283,21 @@ float TextBox(Vector2 position, const char *text, const TextStyle &style)
     return textbox_height;
 }
 
+std::string runCommand(const char *command)
+{
+    FILE *pipe = popen(command, "r");
+    char buffer[4096];
+    std::string result;
+
+    while (fgets(buffer, sizeof(buffer), pipe))
+    {
+        result += buffer;
+    }
+
+    pclose(pipe);
+    return result;
+}
+
 struct ProfileStruct
 {
     std::string folder_path;
@@ -298,13 +313,21 @@ float draw_category_page_profiles(float y)
     y += TextBox({40.0f, y}, "Profiles", style_page_title);
 
     y -= 20.0f;
-    for (const ProfileStruct &profile : profiles)
+    for (std::vector<ProfileStruct>::iterator it = profiles.begin(); it != profiles.end(); ++it)
     {
+        const ProfileStruct &profile = *it;
         y += 40.0f;
         y += TextBox({40.0f, y}, profile.name.c_str(), style_profile_name);
         y += 10.0f;
         y += TextBox({40.0f, y}, profile.folder_path.c_str(), style_profile_path);
         y += 10.0f;
+        if (Button({40.0f, y, 100.0f, 50.0f}, "Delete"))
+        {
+            const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
+            runCommand(command.c_str());
+            profiles.erase(it);
+        }
+        y += 50.0f;
     }
 
     return initial_y - y;
@@ -357,21 +380,6 @@ float NavBar(float y)
     }
 
     return button_height;
-}
-
-std::string runCommand(const char *command)
-{
-    FILE *pipe = popen(command, "r");
-    char buffer[4096];
-    std::string result;
-
-    while (fgets(buffer, sizeof(buffer), pipe))
-    {
-        result += buffer;
-    }
-
-    pclose(pipe);
-    return result;
 }
 
 void init_profiles()
