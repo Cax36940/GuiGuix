@@ -213,6 +213,20 @@ constexpr TextStyle style_profile_package = {
     .text_box_width = 1920.0f,
     .right_margin = 40.0f};
 
+constexpr TextStyle style_package_title = {
+    .font_size = 20.0f,
+    .font_mode = FontMode::BOLD,
+    .font_color = WHITE,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
+constexpr TextStyle style_package_subtitle = {
+    .font_size = 16.0f,
+    .font_mode = FontMode::NONE,
+    .font_color = WHITE,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
 // Just used to draw text from string view
 void DrawTextView(Font font, const std::string_view &text, Vector2 position, float fontSize, float spacing, Color tint)
 {
@@ -369,11 +383,23 @@ float draw_category_page_profiles(float y)
     return initial_y - y;
 }
 
+#include "search.cpp"
+
 float draw_category_page_packages(float y)
 {
     const float initial_y = y;
     y += 20.0f;
     y += TextBox({40.0f, y}, "Packages", style_page_title);
+
+    for (const Package &package : all_packages)
+    {
+        y += 20.0f;
+        y += TextBox({40.0f, y}, package.name.c_str(), style_package_title);
+        y += TextBox({40.0f, y}, package.version.c_str(), style_package_title);
+        y += TextBox({70.0f, y}, package.synopsis.c_str(), style_package_subtitle);
+        y += TextBox({70.0f, y}, package.description.c_str(), style_package_subtitle);
+    }
+
     return initial_y - y;
 }
 
