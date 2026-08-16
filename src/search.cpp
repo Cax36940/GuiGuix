@@ -92,6 +92,15 @@ std::vector<PackageLocation> compute_package_locations()
         locations.push_back(package);
     }
 
+    std::sort(locations.begin(), locations.end(),
+              [](const PackageLocation &a, const PackageLocation &b)
+              {
+                  if (a.file != b.file)
+                      return a.file < b.file;
+
+                  return a.line < b.line;
+              });
+
     return locations;
 }
 
@@ -113,37 +122,60 @@ void init_packages()
 {
     std::vector<PackageLocation> locations = compute_package_locations();
     printf("Total number of packages : %lu\n", locations.size());
+
     all_packages.reserve(locations.size());
+
+    std::string cached_file_path = "";
+    std::string cached_file_content = "";
+    size_t cached_current_line = 1;
+    size_t cached_pos = 0;
 
     for (const PackageLocation &location : locations)
     {
         // Get file content
-        const std::string file_str = read_file(location.file);
-        printf("%s:%lu\n", location.file.c_str(), location.line);
-        if (file_str.empty())
+        if (location.file != cached_file_path)
+        {
+            printf("File : %s\n", location.file.c_str());
+            cached_file_path = location.file;
+            cached_file_content = read_file(location.file);
+            cached_current_line = 1;
+            cached_pos = 0;
+        }
+
+        if (cached_file_content.empty())
         {
             continue;
         }
-        const char *file_raw = file_str.data();
+
+        if (location.line < cached_current_line)
+        {
+            printf("[WARNING] Current line : %lu but looking for line %lu\tFile : %s\n", cached_current_line, location.line, location.file.c_str());
+            continue;
+        }
+        printf("Line : %lu\n", location.line);
+
+        const char *file_raw = cached_file_content.data();
 
         // Go to the package definition line
-        size_t pos = 0;
-        size_t count_line = 1;
+        size_t pos = cached_pos;
+        size_t current_line = cached_current_line;
 
-        while (count_line < location.line)
+        while (current_line < location.line)
         {
             if (file_raw[pos] == '\n')
             {
-                ++count_line;
+                ++current_line;
             }
             ++pos;
         }
 
-        size_t current_line = location.line + 1;
-
         // Go until the first (
         while (file_raw[pos] != '(')
         {
+            if (file_raw[pos] == '\n')
+            {
+                ++current_line;
+            }
             ++pos;
         }
         ++pos; // <- we're approximately on the p of "package"
@@ -151,6 +183,10 @@ void init_packages()
         // Go until next (
         while (file_raw[pos] != '(')
         {
+            if (file_raw[pos] == '\n')
+            {
+                ++current_line;
+            }
             ++pos;
         }
         ++pos; // <- we're approximately on the first char of the first package field
@@ -170,7 +206,7 @@ void init_packages()
             }
             std::string field_name(&file_raw[pos], end_field_name - pos);
 
-            size_t debug_package_index = 7893;
+            size_t debug_package_index = 1;
             if (all_packages.size() == debug_package_index)
             {
                 printf("Field name : %s\n", field_name.c_str());
@@ -329,6 +365,8 @@ void init_packages()
         }
 
         all_packages.push_back(package);
+        cached_current_line = current_line;
+        cached_pos = pos;
 
         printf("%lu/%lu\n", all_packages.size(), all_packages.capacity());
     }
