@@ -520,6 +520,8 @@ int main()
     init_profiles();
     init_packages();
 
+    float y_scroll = 0.0f;
+
     while (!WindowShouldClose())
     {
         if (IsWindowResized())
@@ -528,13 +530,19 @@ int main()
             window_height = GetScreenHeight();
         }
 
+        if (GetMouseWheelMove())
+        {
+            y_scroll += GetMouseWheelMove() * 130.0f;
+        }
+        y_scroll = std::min(0.0f, y_scroll);
+
         cursor = MOUSE_CURSOR_DEFAULT;
 
         BeginDrawing();
 
         ClearBackground(BLACK);
 
-        float y = 0.0f;
+        float y = y_scroll;
         y += 40.0f;
         y += TextBox({40.0f, y}, "GuiGuix", style_application_title);
         y += 5.0f;
