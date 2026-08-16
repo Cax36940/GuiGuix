@@ -514,6 +514,7 @@ int main()
     }
 
     init_profiles();
+    init_packages();
 
     while (!WindowShouldClose())
     {
