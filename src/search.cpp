@@ -50,4 +50,6 @@ void init_packages()
 
         all_packages.push_back({name, version, synopsis, description});
     }
+    std::sort(all_packages.begin(), all_packages.end(), [](const Package &a, const Package &b)
+              { return strcmp(a.name, b.name) < 0; });
 }
