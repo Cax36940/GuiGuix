@@ -20,6 +20,11 @@
                std::chrono::duration<double, std::milli>(end - start).count()); \
     } while (0)
 
+bool IsKeyPressedOrRepeat(int key)
+{
+    return IsKeyPressed(key) || IsKeyPressedRepeat(key);
+}
+
 int window_width = 1200;
 int window_height = 800;
 int cursor = MOUSE_CURSOR_DEFAULT;
@@ -316,6 +321,127 @@ float TextBox(Vector2 position, const char *text, const TextStyle &style)
     return textbox_height;
 }
 
+float TextInput(Vector2 pos, float width, std::string &text, bool &selected, const std::string &placeholder_text = "")
+{
+    static float caret_timer = 0.0f;
+    static size_t caret_index = 0;
+
+    Rectangle rect = {pos.x, pos.y, width, 0.0f};
+    static constexpr float font_size = 26.0f;
+    const Font font = get_font(font_size, FontMode::NONE);
+
+    const Vector2 letter_size = MeasureTextEx(font, "W", font_size, 0);
+    rect.height = letter_size.y + 2 * 5.0f;
+    const bool hovered = CheckCollisionPointRec(GetMousePosition(), rect);
+
+    if (hovered)
+    {
+        cursor = MOUSE_CURSOR_IBEAM;
+    }
+
+    // Update focus
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+        selected = hovered;
+        if (hovered)
+        {
+            caret_timer = 0.0f;
+            const float local_x = GetMousePosition().x - (rect.x + 5.0f);
+            const int clicked_index = 0.5 + local_x / letter_size.x;
+            caret_index = std::min((size_t)std::max(clicked_index, 0), text.size());
+        }
+    }
+
+    // Update caret blinking
+    caret_timer += GetFrameTime();
+    if (caret_timer > 1.0f)
+    {
+        caret_timer = 0.0f;
+    }
+
+    // Handle input key press
+    int key = GetCharPressed();
+    while (key > 0)
+    {
+        text.insert(caret_index, 1, (char)key);
+        ++caret_index;
+        caret_timer = 0.0f;
+
+        key = GetCharPressed();
+    }
+
+    const bool is_ctrl_down = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+
+    // Handle deletion
+    if (IsKeyPressedOrRepeat(KEY_BACKSPACE))
+    {
+        if (caret_index > 0)
+        {
+            if (is_ctrl_down)
+            {
+                text.erase(0, caret_index);
+                caret_index = 0;
+            }
+            else
+            {
+                text.erase(caret_index - 1, 1);
+                --caret_index;
+            }
+            caret_timer = 0.0f;
+        }
+    }
+
+    // Handle moving caret
+    if (IsKeyPressedOrRepeat(KEY_LEFT))
+    {
+        if (is_ctrl_down)
+        {
+            caret_index = 0;
+        }
+        else if (0 < caret_index)
+        {
+            --caret_index;
+        }
+        caret_timer = 0.0f;
+    }
+    if (IsKeyPressedOrRepeat(KEY_RIGHT))
+    {
+        if (is_ctrl_down)
+        {
+            caret_index = text.size();
+        }
+        else if (caret_index < text.size())
+        {
+            ++caret_index;
+        }
+        caret_timer = 0.0f;
+    }
+
+    // Draw rectangle
+    const Color frame_color = selected ? WHITE : (hovered ? GRAY : DARKGRAY);
+
+    DrawRectangleRounded({rect.x - 1.0f, rect.y - 1.0f, rect.width + 2.0f, rect.height + 2.0f}, 0.2, 3, frame_color);
+    DrawRectangleRounded(rect, 0.2f, 3, BLACK);
+
+    // Draw text
+    if (text.empty())
+    {
+        DrawTextEx(font, placeholder_text.c_str(), {rect.x + 5.0f, rect.y + 5.0f + letter_size.y / 10.0f}, font_size, 0, GRAY);
+    }
+    else
+    {
+        DrawTextEx(font, text.c_str(), {rect.x + 5.0f, rect.y + 5.0f + letter_size.y / 10.0f}, font_size, 0, WHITE);
+    }
+
+    // Draw caret
+    if (selected && caret_timer < 0.5f)
+    {
+        DrawRectangle(rect.x + 5.0f + letter_size.x * caret_index, rect.y + 5.0f, 1.2f, letter_size.y, WHITE);
+    }
+
+    return rect.height;
+}
+
 std::string runCommand(const char *command)
 {
     FILE *pipe = popen(command, "r");
@@ -402,6 +528,11 @@ float draw_category_page_packages(float y)
     const float initial_y = y;
     y += 20.0f;
     y += TextBox({40.0f, y}, "Packages", style_page_title);
+
+    static std::string search_string = "";
+    static bool is_search_input_selected = false;
+    y += 20.0f;
+    y += TextInput({40.0f, y}, window_width - 80.0f, search_string, is_search_input_selected, "Search");
 
     for (const Package &package : all_packages)
     {
