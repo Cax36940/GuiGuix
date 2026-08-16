@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include <chrono>
 #include <cmath>
 #include <functional>
 #include <stdio.h>
@@ -7,6 +8,17 @@
 #include <vector>
 
 #define RES_PATH(X) "./resources/" X
+
+#define TIME_FUNCTION(func)                                                     \
+    do                                                                          \
+    {                                                                           \
+        auto start = std::chrono::steady_clock::now();                          \
+        func;                                                                   \
+        auto end = std::chrono::steady_clock::now();                            \
+        printf("%s: %.3f ms\n",                                                 \
+               #func,                                                           \
+               std::chrono::duration<double, std::milli>(end - start).count()); \
+    } while (0)
 
 int window_width = 1200;
 int window_height = 800;
@@ -517,8 +529,8 @@ int main()
         guix_exists = false;
     }
 
-    init_profiles();
-    init_packages();
+    TIME_FUNCTION(init_profiles());
+    TIME_FUNCTION(init_packages());
 
     float y_scroll = 0.0f;
 

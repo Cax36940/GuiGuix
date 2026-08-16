@@ -58,7 +58,7 @@ struct PackageLocation
 
 std::vector<PackageLocation> compute_package_locations()
 {
-    const std::string list_available_str = runCommand("guix package --list-available");
+    const std::string list_available_str = runCommand("guix package --list-available"); // -> 1.3 seconds to run this command
     const char *list_available_raw = list_available_str.data();
     size_t cursor = 0;
 
@@ -135,7 +135,7 @@ void init_packages()
         // Get file content
         if (location.file != cached_file_path)
         {
-            printf("File : %s\n", location.file.c_str());
+            // printf("File : %s\n", location.file.c_str());
             cached_file_path = location.file;
             cached_file_content = read_file(location.file);
             cached_current_line = 1;
@@ -149,10 +149,10 @@ void init_packages()
 
         if (location.line < cached_current_line)
         {
-            printf("[WARNING] Current line : %lu but looking for line %lu\tFile : %s\n", cached_current_line, location.line, location.file.c_str());
+            // printf("[WARNING] Current line : %lu but looking for line %lu\tFile : %s\n", cached_current_line, location.line, location.file.c_str());
             continue;
         }
-        printf("Line : %lu\n", location.line);
+        // printf("Line : %lu\n", location.line);
 
         const char *file_raw = cached_file_content.data();
 
@@ -206,7 +206,7 @@ void init_packages()
             }
             std::string field_name(&file_raw[pos], end_field_name - pos);
 
-            size_t debug_package_index = 1;
+            size_t debug_package_index = -1;
             if (all_packages.size() == debug_package_index)
             {
                 printf("Field name : %s\n", field_name.c_str());
@@ -368,6 +368,6 @@ void init_packages()
         cached_current_line = current_line;
         cached_pos = pos;
 
-        printf("%lu/%lu\n", all_packages.size(), all_packages.capacity());
+        // printf("%lu/%lu\n", all_packages.size(), all_packages.capacity());
     }
 }
