@@ -85,49 +85,20 @@ struct SearchResult
     int score;
 };
 
-int score_string(const std::string &small_pattern, const std::string_view &small_str)
+int score_string(std::string_view pattern, std::string_view str)
 {
-    if (small_pattern.empty() || !small_str[0])
-        return 0;
-
-    const size_t pattern_len = small_pattern.size();
-    const size_t str_len = small_str.size();
-
-    if (pattern_len > str_len)
+    if (pattern.empty() || str.empty() || pattern.size() > str.size())
     {
         return 0;
     }
 
     int score = 0;
+    size_t pos = 0;
 
-    for (size_t pos = 0; pos <= str_len - pattern_len;)
+    while ((pos = str.find(pattern, pos)) != std::string_view::npos)
     {
-        bool match = true;
-
-        for (size_t i = 0; i < pattern_len; ++i)
-        {
-            if (small_str[pos + i] != small_pattern[i])
-            {
-                match = false;
-                break;
-            }
-        }
-
-        if (match)
-        {
-            // Exact match of the entire field.
-            if (pos == 0 && pattern_len == str_len)
-                score += 5;
-            else
-                score += 1;
-
-            // Don't count overlapping matches.
-            pos += pattern_len;
-        }
-        else
-        {
-            ++pos;
-        }
+        score += (pos == 0 && pattern.size() == str.size()) ? 5 : 1;
+        pos += pattern.size();
     }
 
     return score;
