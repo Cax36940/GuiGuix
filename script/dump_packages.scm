@@ -3,22 +3,23 @@
              (guix))
 
 (define (clean-field field)
-  (string-map
-   (lambda (c)
-     (cond
-      ((char=? c #\newline) #\space)
-      (else c)))
-   (or field "")))
-
-(define (package->string package)
-  (string-append
-   (clean-field (package-name package)) "\n"
-   (clean-field (package-version package)) "\n"
-   (clean-field (package-synopsis package)) "\n"
-   (clean-field (package-description package)) "\n"))
+  (if field
+      (string-replace-substring field "\n" " ")
+      ""))
 
 (fold-packages
  (lambda (package result)
-   (display (package->string package))
+   (display (package-name package))
+   (newline)
+
+   (display (package-version package))
+   (newline)
+
+   (display (clean-field (package-synopsis package)))
+   (newline)
+
+   (display (clean-field (package-description package)))
+   (newline)
+
    result)
  '())
