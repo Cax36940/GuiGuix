@@ -656,7 +656,7 @@ float draw_page_modify_profile(float y)
 
         for (const SearchResult &result : displayed_packages)
         {
-            if (Button({search_box_x, right_y, window_width - search_box_x - 40.0f, 50.0f}, result.package->name.data()))
+            if (Button({search_box_x, right_y, window_width - search_box_x - 40.0f, 50.0f}, (std::string(result.package->name) + " " + std::string(result.package->version)).data()))
             {
                 bool is_in_list = false;
                 for (const Package *p : install_list)
