@@ -8,6 +8,8 @@
 #include <string_view>
 #include <vector>
 
+#include "search.cpp"
+
 #define RES_PATH(X) "./resources/" X
 
 #define TIME_FUNCTION(func)                                                     \
@@ -473,6 +475,11 @@ float draw_page_modify_profile(float y)
 {
     const float initial_y = y;
     static std::vector<bool> delete_list;
+    static std::vector<Package *> install_list;
+    static std::string search_string = "";
+    static bool is_search_input_selected = false;
+    static std::vector<SearchResult> displayed_packages = search(all_packages, {});
+
     if (!modify_profile->packages.empty() && delete_list.empty())
     {
         for (size_t i = 0; i < modify_profile->packages.size(); ++i)
@@ -486,6 +493,8 @@ float draw_page_modify_profile(float y)
     {
         modify_profile = nullptr;
         delete_list.clear();
+        install_list.clear();
+        search_string = "";
         return 0.0f;
     }
 
@@ -521,17 +530,21 @@ float draw_page_modify_profile(float y)
     y += TextBox({40.0f, y}, modify_profile->folder_path.c_str(), style_profile_path);
 
     DrawLine(window_width / 2.0f, y, window_width / 2.0f, window_height - 40.0f, WHITE);
-
-    y += 20.0f;
-    y += TextBox({50.0f, y}, "Remove?", style_profile_name);
-    y += 20.0f;
+    float left_y = y;
+    float right_y = y;
+    if (!delete_list.empty())
+    {
+        left_y += 20.0f;
+        left_y += TextBox({50.0f, left_y}, "Remove?", style_profile_name);
+        left_y += 20.0f;
+    }
     for (size_t i = 0; i < modify_profile->packages.size(); ++i)
     {
         const std::string &package_name = modify_profile->packages[i];
         const float delete_box_x = 70.0f;
-        const float delete_box_y = y - 4.0f;
+        const float delete_box_y = left_y - 4.0f;
 
-        y += TextBox({delete_box_x + 20.0f + 20.0f, y}, package_name.c_str(), style_profile_name);
+        left_y += TextBox({delete_box_x + 20.0f + 20.0f, left_y}, package_name.c_str(), style_profile_name);
 
         if (delete_list[i])
         {
@@ -548,8 +561,25 @@ float draw_page_modify_profile(float y)
             }
         }
 
-        y += 10.0f;
+        left_y += 10.0f;
     }
+
+    const std::string prev_search_string = search_string;
+    right_y += TextInput({window_width / 2.0f + 40.0f, right_y}, window_width / 2.0f - 80.0f, search_string, is_search_input_selected, "Search");
+
+    if (prev_search_string != search_string)
+    {
+        std::vector<std::string> patterns;
+        std::stringstream ss(search_string);
+        std::string pattern;
+
+        while (ss >> pattern)
+        {
+            patterns.push_back(pattern);
+        }
+        displayed_packages = search(all_packages, patterns);
+    }
+
     return y = initial_y;
 }
 
@@ -614,8 +644,6 @@ float draw_category_page_profiles(float y)
 
     return initial_y - y;
 }
-
-#include "search.cpp"
 
 float draw_category_page_packages(float y)
 {
