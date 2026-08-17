@@ -476,6 +476,7 @@ float draw_page_modify_profile(float y)
     const float initial_y = y;
     static std::vector<bool> delete_list;
     static std::vector<const Package *> install_list;
+    static std::vector<bool> install_list_bool;
     static std::string search_string = "";
     static bool is_search_input_selected = false;
     static std::vector<SearchResult> displayed_packages = search(all_packages, {});
@@ -494,6 +495,7 @@ float draw_page_modify_profile(float y)
         modify_profile = nullptr;
         delete_list.clear();
         install_list.clear();
+        install_list_bool.clear();
         search_string = "";
         return 0.0f;
     }
@@ -550,7 +552,7 @@ float draw_page_modify_profile(float y)
         {
             if (Button({delete_box_x, delete_box_y, 20.0f, 20.0f}, "X"))
             {
-                delete_list[i] = !delete_list[i];
+                delete_list[i] = false;
             }
         }
         else
@@ -570,6 +572,32 @@ float draw_page_modify_profile(float y)
         right_y += TextBox({window_width / 2.0f + 10.0f, right_y}, "Install?", style_profile_name);
         right_y += 20.0f;
     }
+    for (size_t i = 0; i < install_list.size(); ++i)
+    {
+        const std::string_view &package_name = install_list[i]->name;
+        const float install_box_x = window_width / 2.0f + 30.0f;
+        const float install_box_y = right_y - 4.0f;
+
+        right_y += TextBox({install_box_x + 20.0f + 20.0f, right_y}, package_name.data(), style_profile_name);
+
+        if (install_list_bool[i])
+        {
+            if (Button({install_box_x, install_box_y, 20.0f, 20.0f}, "X"))
+            {
+                install_list_bool[i] = false;
+            }
+        }
+        else
+        {
+            if (Button({install_box_x, install_box_y, 20.0f, 20.0f}, " "))
+            {
+                install_list_bool[i] = true;
+            }
+        }
+
+        right_y += 10.0f;
+    }
+
     const std::string prev_search_string = search_string;
     const float search_box_x = window_width / 2.0f + 40.0f;
     right_y += TextInput({search_box_x, right_y}, window_width - search_box_x - 40.0f, search_string, is_search_input_selected, "Search");
@@ -605,6 +633,7 @@ float draw_page_modify_profile(float y)
                 if (!is_in_list)
                 {
                     install_list.push_back(result.package);
+                    install_list_bool.push_back(true);
                 }
             }
 
@@ -616,7 +645,7 @@ float draw_page_modify_profile(float y)
         }
     }
 
-    return y = initial_y;
+    return std::max(left_y, right_y) - initial_y;
 }
 
 float draw_category_page_profiles(float y)
