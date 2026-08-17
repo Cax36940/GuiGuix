@@ -71,12 +71,12 @@ static inline char lower_char(char c)
         std::tolower(static_cast<unsigned char>(c)));
 }
 
-int score_string(const std::string &pattern, const std::string_view &str)
+int score_string(const std::string &small_pattern, const std::string_view &str)
 {
-    if (pattern.empty() || !str[0])
+    if (small_pattern.empty() || !str[0])
         return 0;
 
-    const size_t pattern_len = pattern.size();
+    const size_t pattern_len = small_pattern.size();
     const size_t str_len = str.size();
 
     if (pattern_len > str_len)
@@ -92,7 +92,7 @@ int score_string(const std::string &pattern, const std::string_view &str)
 
         for (size_t i = 0; i < pattern_len; ++i)
         {
-            if (lower_char(str[pos + i]) != lower_char(pattern[i]))
+            if (lower_char(str[pos + i]) != small_pattern[i])
             {
                 match = false;
                 break;
@@ -134,21 +134,30 @@ search(const std::vector<Package> &packages,
         return results;
     }
 
+    std::vector<std::string> small_patterns = patterns;
+    for (std::string &pattern : small_patterns)
+    {
+        for (char &c : pattern)
+        {
+            c = lower_char(c);
+        }
+    }
+
     for (const Package &package : packages)
     {
         int score = 0;
 
-        for (const std::string &pattern : patterns)
+        for (const std::string &small_pattern : small_patterns)
         {
             int sub_score = 0;
             // Name: weight 4
-            sub_score += 6 * score_string(pattern, package.name);
+            sub_score += 6 * score_string(small_pattern, package.name);
 
             // Synopsis: weight 3
-            sub_score += 3 * score_string(pattern, package.synopsis);
+            sub_score += 3 * score_string(small_pattern, package.synopsis);
 
             // Description: weight 2
-            sub_score += 2 * score_string(pattern, package.description);
+            sub_score += 2 * score_string(small_pattern, package.description);
 
             if (sub_score == 0) // all patterns should be found
             {
