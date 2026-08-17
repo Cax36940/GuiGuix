@@ -671,6 +671,7 @@ float draw_page_modify_profile(float y)
                 {
                     install_list.push_back(result.package);
                     install_list_bool.push_back(true);
+                    search_string = "";
                 }
             }
 
