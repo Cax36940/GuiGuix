@@ -571,12 +571,11 @@ float draw_page_modify_profile(float y)
     DrawLine(window_width / 2.0f, y, window_width / 2.0f, window_height - 40.0f, WHITE);
     float left_y = y;
     float right_y = y;
-    if (!delete_list.empty())
-    {
-        left_y += 20.0f;
-        left_y += TextBox({50.0f, left_y}, "Remove?", style_profile_name);
-        left_y += 20.0f;
-    }
+
+    left_y += 20.0f;
+    left_y += TextBox({50.0f, left_y}, "Remove?", style_profile_name);
+    left_y += 20.0f;
+
     for (size_t i = 0; i < modify_profile->packages.size(); ++i)
     {
         const std::string &package_name = modify_profile->packages[i];
@@ -603,12 +602,10 @@ float draw_page_modify_profile(float y)
         left_y += 10.0f;
     }
 
-    if (!install_list.empty())
-    {
-        right_y += 20.0f;
-        right_y += TextBox({window_width / 2.0f + 10.0f, right_y}, "Install?", style_profile_name);
-        right_y += 20.0f;
-    }
+    right_y += 20.0f;
+    right_y += TextBox({window_width / 2.0f + 10.0f, right_y}, "Install?", style_profile_name);
+    right_y += 20.0f;
+
     for (size_t i = 0; i < install_list.size(); ++i)
     {
         const std::string_view &package_name = install_list[i]->name;
