@@ -206,6 +206,13 @@ constexpr TextStyle style_profile_name = {
     .text_box_width = 1920.0f,
     .right_margin = 40.0f};
 
+constexpr TextStyle style_profile_package = {
+    .font_size = 16.0f,
+    .font_mode = FontMode::BOLD,
+    .font_color = WHITE,
+    .text_box_width = 1920.0f,
+    .right_margin = 40.0f};
+
 // Just used to draw text from string view
 void DrawTextView(Font font, const std::string_view &text, Vector2 position, float fontSize, float spacing, Color tint)
 {
@@ -302,6 +309,7 @@ struct ProfileStruct
 {
     std::string folder_path;
     std::string name;
+    std::vector<std::string> packages;
 };
 
 std::vector<ProfileStruct> profiles;
@@ -321,6 +329,26 @@ float draw_category_page_profiles(float y)
         y += 10.0f;
         y += TextBox({40.0f, y}, profile.folder_path.c_str(), style_profile_path);
         y += 10.0f;
+
+        if (profile.packages.size() > 0)
+        {
+            if (profile.packages.size() == 1)
+            {
+                y += TextBox({40.0f, y}, "Installed package:", style_profile_name);
+            }
+            else
+            {
+                y += TextBox({40.0f, y}, "Installed packages:", style_profile_name);
+            }
+            y += 10.0f;
+            for (const std::string &package_name : profile.packages)
+            {
+                y += TextBox({70.0f, y}, ("- " + package_name).c_str(), style_profile_package);
+                y += 10.0f;
+            }
+            y += 10.0f;
+        }
+
         if (Button({40.0f, y, 100.0f, 50.0f}, "Delete"))
         {
             const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
@@ -382,6 +410,34 @@ float NavBar(float y)
     return button_height;
 }
 
+std::vector<std::string> get_installed_package(const std::string profile_path)
+{
+    std::vector<std::string> installed_package;
+    const std::string command = "guix package -p " + profile_path + " --list-installed";
+    const std::string packages_str = runCommand(command.c_str());
+
+    const char *packages_raw = packages_str.data();
+    size_t end = 0;
+    while (packages_raw[end])
+    {
+        const size_t name_begin = end;
+        size_t name_end = 0;
+        while (packages_raw[end] != '\n' && packages_raw[end] != '\0')
+        {
+            if (name_end == 0 && packages_raw[end] == '\t')
+            {
+                name_end = end;
+            }
+            ++end;
+        }
+
+        installed_package.push_back(packages_str.substr(name_begin, name_end - name_begin));
+        ++end;
+    }
+
+    return installed_package;
+}
+
 void init_profiles()
 {
     profiles.clear();
@@ -403,7 +459,7 @@ void init_profiles()
 
         const std::string path = profiles_str.substr(begin, end - begin);
         const std::string name = profiles_str.substr(name_pos, end - name_pos);
-        profiles.push_back({path, name});
+        profiles.push_back({path, name, get_installed_package(path)});
         end++;
         begin = end;
     }
