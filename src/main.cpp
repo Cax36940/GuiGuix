@@ -511,15 +511,52 @@ float draw_page_modify_profile(float y)
                 delete_package_list_str += " ";
             }
         }
-        const std::string command = "guix package -p " + modify_profile->folder_path + " --verbosity=0 -r " + delete_package_list_str;
-        printf("%s\n", command.c_str());
-        runCommand(command.c_str());
 
-        for (long int i = modify_profile->packages.size() - 1; i >= 0; --i)
+        std::string install_package_list_str = "";
+        for (size_t i = 0; i < install_list.size(); ++i)
         {
-            if (delete_list[i])
+            if (install_list_bool[i])
             {
-                modify_profile->packages.erase(modify_profile->packages.begin() + i);
+                install_package_list_str += install_list[i]->name;
+                install_package_list_str += " ";
+            }
+        }
+
+        if (!install_package_list_str.empty() || !delete_package_list_str.empty())
+        {
+            std::string command = "guix package -p " + modify_profile->folder_path + " --verbosity=0";
+            if (!delete_package_list_str.empty())
+            {
+                command += " -r " + delete_package_list_str;
+            }
+            if (!install_package_list_str.empty())
+            {
+                command += " -i " + install_package_list_str;
+            }
+
+            printf("%s\n", command.c_str());
+            runCommand(command.c_str());
+
+            for (long int i = modify_profile->packages.size() - 1; i >= 0; --i)
+            {
+                if (delete_list[i])
+                {
+                    modify_profile->packages.erase(modify_profile->packages.begin() + i);
+                }
+            }
+            for (size_t i = 0; i < install_list.size(); ++i)
+            {
+                if (install_list_bool[i])
+                {
+                    modify_profile->packages.emplace_back(install_list[i]->name);
+                }
+            }
+            install_list.clear();
+            install_list_bool.clear();
+            delete_list.clear();
+            for (size_t i = 0; i < modify_profile->packages.size(); ++i)
+            {
+                delete_list.push_back(false);
             }
         }
     }
