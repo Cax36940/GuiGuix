@@ -467,9 +467,105 @@ struct ProfileStruct
 
 std::vector<ProfileStruct> profiles;
 
+ProfileStruct *modify_profile = nullptr;
+
+float draw_page_modify_profile(float y)
+{
+    const float initial_y = y;
+    static std::vector<bool> delete_list;
+    if (!modify_profile->packages.empty() && delete_list.empty())
+    {
+        for (size_t i = 0; i < modify_profile->packages.size(); ++i)
+        {
+            delete_list.push_back(false);
+        }
+    }
+
+    y += 20.0f;
+    if (Button({40.0f, y, 100.0f, 50.0f}, "<- Back"))
+    {
+        modify_profile = nullptr;
+        delete_list.clear();
+        return 0.0f;
+    }
+
+    if (Button({window_width - 40.0f - 100.0f, y, 100.0f, 50.0f}, "Apply"))
+    {
+        std::string delete_package_list_str = "";
+        for (size_t i = 0; i < modify_profile->packages.size(); ++i)
+        {
+            if (delete_list[i])
+            {
+                delete_package_list_str += modify_profile->packages[i];
+                delete_package_list_str += " ";
+            }
+        }
+        const std::string command = "guix package -p " + modify_profile->folder_path + " --verbosity=0 -r " + delete_package_list_str;
+        printf("%s\n", command.c_str());
+        runCommand(command.c_str());
+
+        for (long int i = modify_profile->packages.size() - 1; i >= 0; --i)
+        {
+            if (delete_list[i])
+            {
+                modify_profile->packages.erase(modify_profile->packages.begin() + i);
+            }
+        }
+    }
+
+    y += 50.0f;
+    y += 20.0f;
+
+    y += TextBox({40.0f, y}, modify_profile->name.c_str(), style_page_title);
+    y += 10.0f;
+    y += TextBox({40.0f, y}, modify_profile->folder_path.c_str(), style_profile_path);
+
+    DrawLine(window_width / 2.0f, y, window_width / 2.0f, window_height - 40.0f, WHITE);
+
+    y += 20.0f;
+    y += TextBox({50.0f, y}, "Remove?", style_profile_name);
+    y += 20.0f;
+    for (size_t i = 0; i < modify_profile->packages.size(); ++i)
+    {
+        const std::string &package_name = modify_profile->packages[i];
+        const float delete_box_x = 70.0f;
+        const float delete_box_y = y - 4.0f;
+
+        y += TextBox({delete_box_x + 20.0f + 20.0f, y}, package_name.c_str(), style_profile_name);
+
+        if (delete_list[i])
+        {
+            if (Button({delete_box_x, delete_box_y, 20.0f, 20.0f}, "X"))
+            {
+                delete_list[i] = !delete_list[i];
+            }
+        }
+        else
+        {
+            if (Button({delete_box_x, delete_box_y, 20.0f, 20.0f}, " "))
+            {
+                delete_list[i] = true;
+            }
+        }
+
+        y += 10.0f;
+    }
+    return y = initial_y;
+}
+
 float draw_category_page_profiles(float y)
 {
     const float initial_y = y;
+
+    if (modify_profile)
+    {
+        y += draw_page_modify_profile(y);
+        if (modify_profile)
+        {
+            return y - initial_y;
+        }
+    }
+
     y += 20.0f;
     y += TextBox({40.0f, y}, "Profiles", style_page_title);
 
@@ -497,14 +593,7 @@ float draw_category_page_profiles(float y)
             for (std::vector<std::string>::iterator pack_it = profile.packages.begin(); pack_it != profile.packages.end(); ++pack_it)
             {
                 const std::string &package_name = *pack_it;
-                if (Button({40.0f, y - 4.0f, 20.0f, 20.0f}, "x"))
-                {
-                    const std::string command = "guix package -p " + profile.folder_path + "-q -r " + package_name;
-                    runCommand(command.c_str());
-                    profile.packages.erase(pack_it);
-                }
-
-                y += TextBox({70.0f, y}, ("- " + package_name).c_str(), style_profile_package);
+                y += TextBox({40.0f, y}, ("- " + package_name).c_str(), style_profile_package);
                 y += 10.0f;
             }
             y += 10.0f;
@@ -515,6 +604,10 @@ float draw_category_page_profiles(float y)
             const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
             runCommand(command.c_str());
             profiles.erase(it);
+        }
+        if (Button({160.0f, y, 100.0f, 50.0f}, "Modify"))
+        {
+            modify_profile = &profile;
         }
         y += 50.0f;
     }
