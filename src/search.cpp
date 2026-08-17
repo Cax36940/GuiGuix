@@ -1,13 +1,14 @@
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct Package
 {
-    const char *name;
-    const char *version;
-    const char *synopsis;
-    const char *description;
+    std::string_view name;
+    std::string_view version;
+    std::string_view synopsis;
+    std::string_view description;
 };
 
 std::vector<Package> all_packages;
@@ -43,20 +44,19 @@ void init_packages()
 
     while (*ptr)
     {
-        const char *name = next_string(ptr);
-        const char *version = next_string(ptr);
-        const char *synopsis = next_string(ptr);
-        const char *description = next_string(ptr);
+        std::string_view name = next_string(ptr);
+        std::string_view version = next_string(ptr);
+        std::string_view synopsis = next_string(ptr);
+        std::string_view description = next_string(ptr);
 
         all_packages.push_back({name, version, synopsis, description});
     }
     std::sort(all_packages.begin(), all_packages.end(), [](const Package &a, const Package &b)
               {
-                const int name_cmp = strcmp(a.name, b.name);
-                if (name_cmp != 0){
-                    return name_cmp < 0;
+                if (a.name == b.name){
+                    return a.version > b.version;
                 }
-                return strcmp(a.version,b.version) > 0; });
+                return a.name < b.name; });
 }
 
 struct SearchResult
@@ -71,13 +71,13 @@ static inline char lower_char(char c)
         std::tolower(static_cast<unsigned char>(c)));
 }
 
-int score_string(const std::string &pattern, const char *str)
+int score_string(const std::string &pattern, const std::string_view &str)
 {
     if (pattern.empty() || !str[0])
         return 0;
 
     const size_t pattern_len = pattern.size();
-    const size_t str_len = std::strlen(str);
+    const size_t str_len = str.size();
 
     if (pattern_len > str_len)
     {

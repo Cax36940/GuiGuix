@@ -556,10 +556,10 @@ float draw_category_page_packages(float y)
     {
         const Package &package = *result.package;
         y += 20.0f;
-        y += TextBox({40.0f, y}, package.name, style_package_title);
-        y += TextBox({40.0f, y}, package.version, style_package_title);
-        y += TextBox({70.0f, y}, package.synopsis, style_package_subtitle);
-        y += TextBox({70.0f, y}, package.description, style_package_subtitle);
+        y += TextBox({40.0f, y}, package.name.data(), style_package_title);
+        y += TextBox({40.0f, y}, package.version.data(), style_package_title);
+        y += TextBox({70.0f, y}, package.synopsis.data(), style_package_subtitle);
+        y += TextBox({70.0f, y}, package.description.data(), style_package_subtitle);
         if (y > window_height)
         {
             break;
