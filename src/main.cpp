@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cmath>
 #include <functional>
+#include <sstream>
 #include <stdio.h>
 #include <string>
 #include <string_view>
@@ -531,11 +532,29 @@ float draw_category_page_packages(float y)
 
     static std::string search_string = "";
     static bool is_search_input_selected = false;
+    static std::vector<SearchResult> displayed_packages = search(all_packages, {});
+
     y += 20.0f;
+
+    const std::string prev_search_string = search_string;
     y += TextInput({40.0f, y}, window_width - 80.0f, search_string, is_search_input_selected, "Search");
 
-    for (const Package &package : all_packages)
+    if (prev_search_string != search_string)
     {
+        std::vector<std::string> patterns;
+        std::stringstream ss(search_string);
+        std::string pattern;
+
+        while (ss >> pattern)
+        {
+            patterns.push_back(pattern);
+        }
+        displayed_packages = search(all_packages, patterns);
+    }
+
+    for (const SearchResult &result : displayed_packages)
+    {
+        const Package &package = *result.package;
         y += 20.0f;
         y += TextBox({40.0f, y}, package.name, style_package_title);
         y += TextBox({40.0f, y}, package.version, style_package_title);
