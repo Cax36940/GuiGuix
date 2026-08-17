@@ -475,7 +475,7 @@ float draw_page_modify_profile(float y)
 {
     const float initial_y = y;
     static std::vector<bool> delete_list;
-    static std::vector<Package *> install_list;
+    static std::vector<const Package *> install_list;
     static std::string search_string = "";
     static bool is_search_input_selected = false;
     static std::vector<SearchResult> displayed_packages = search(all_packages, {});
@@ -564,20 +564,56 @@ float draw_page_modify_profile(float y)
         left_y += 10.0f;
     }
 
-    const std::string prev_search_string = search_string;
-    right_y += TextInput({window_width / 2.0f + 40.0f, right_y}, window_width / 2.0f - 80.0f, search_string, is_search_input_selected, "Search");
-
-    if (prev_search_string != search_string)
+    if (!install_list.empty())
     {
-        std::vector<std::string> patterns;
-        std::stringstream ss(search_string);
-        std::string pattern;
+        right_y += 20.0f;
+        right_y += TextBox({window_width / 2.0f + 10.0f, right_y}, "Install?", style_profile_name);
+        right_y += 20.0f;
+    }
+    const std::string prev_search_string = search_string;
+    const float search_box_x = window_width / 2.0f + 40.0f;
+    right_y += TextInput({search_box_x, right_y}, window_width - search_box_x - 40.0f, search_string, is_search_input_selected, "Search");
 
-        while (ss >> pattern)
+    if (!search_string.empty())
+    {
+        if (prev_search_string != search_string)
         {
-            patterns.push_back(pattern);
+            std::vector<std::string> patterns;
+            std::stringstream ss(search_string);
+            std::string pattern;
+
+            while (ss >> pattern)
+            {
+                patterns.push_back(pattern);
+            }
+            displayed_packages = search(all_packages, patterns);
         }
-        displayed_packages = search(all_packages, patterns);
+
+        for (const SearchResult &result : displayed_packages)
+        {
+            if (Button({search_box_x, right_y, window_width - search_box_x - 40.0f, 50.0f}, result.package->name.data()))
+            {
+                bool is_in_list = false;
+                for (const Package *p : install_list)
+                {
+                    if (p == result.package)
+                    {
+                        is_in_list = true;
+                        break;
+                    }
+                }
+                if (!is_in_list)
+                {
+                    install_list.push_back(result.package);
+                }
+            }
+
+            right_y += 50.0f;
+            if (right_y > window_height)
+            {
+                break;
+            }
+        }
     }
 
     return y = initial_y;
