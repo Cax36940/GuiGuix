@@ -3,16 +3,25 @@
 #include <string_view>
 #include <vector>
 
+static inline char lower_char(char c)
+{
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+}
 struct Package
 {
     std::string_view name;
     std::string_view version;
     std::string_view synopsis;
     std::string_view description;
+
+    std::string_view name_lower;
+    std::string_view synopsis_lower;
+    std::string_view description_lower;
 };
 
 std::vector<Package> all_packages;
 std::string all_packages_str;
+std::string all_packages_lower_str;
 
 const char *next_string(const char *&ptr)
 {
@@ -42,6 +51,13 @@ void init_packages()
 
     const char *ptr = all_packages_str.c_str();
 
+    all_packages_lower_str.reserve(all_packages_str.size());
+    for (size_t i = 0; i < all_packages_str.size(); ++i)
+    {
+        all_packages_lower_str.push_back(lower_char(all_packages_str[i]));
+    }
+    const char *lower_ptr = all_packages_lower_str.c_str();
+
     while (*ptr)
     {
         std::string_view name = next_string(ptr);
@@ -49,7 +65,11 @@ void init_packages()
         std::string_view synopsis = next_string(ptr);
         std::string_view description = next_string(ptr);
 
-        all_packages.push_back({name, version, synopsis, description});
+        std::string_view name_lower(lower_ptr + (name.data() - all_packages_str.data()), name.size());
+        std::string_view synopsis_lower(lower_ptr + (synopsis.data() - all_packages_str.data()), synopsis.size());
+        std::string_view description_lower(lower_ptr + (description.data() - all_packages_str.data()), description.size());
+
+        all_packages.push_back({name, version, synopsis, description, name_lower, synopsis_lower, description_lower});
     }
     std::sort(all_packages.begin(), all_packages.end(), [](const Package &a, const Package &b)
               {
@@ -65,19 +85,13 @@ struct SearchResult
     int score;
 };
 
-static inline char lower_char(char c)
+int score_string(const std::string &small_pattern, const std::string_view &small_str)
 {
-    return static_cast<char>(
-        std::tolower(static_cast<unsigned char>(c)));
-}
-
-int score_string(const std::string &small_pattern, const std::string_view &str)
-{
-    if (small_pattern.empty() || !str[0])
+    if (small_pattern.empty() || !small_str[0])
         return 0;
 
     const size_t pattern_len = small_pattern.size();
-    const size_t str_len = str.size();
+    const size_t str_len = small_str.size();
 
     if (pattern_len > str_len)
     {
@@ -92,7 +106,7 @@ int score_string(const std::string &small_pattern, const std::string_view &str)
 
         for (size_t i = 0; i < pattern_len; ++i)
         {
-            if (lower_char(str[pos + i]) != small_pattern[i])
+            if (small_str[pos + i] != small_pattern[i])
             {
                 match = false;
                 break;
@@ -151,13 +165,13 @@ search(const std::vector<Package> &packages,
         {
             int sub_score = 0;
             // Name: weight 4
-            sub_score += 6 * score_string(small_pattern, package.name);
+            sub_score += 6 * score_string(small_pattern, package.name_lower);
 
             // Synopsis: weight 3
-            sub_score += 3 * score_string(small_pattern, package.synopsis);
+            sub_score += 3 * score_string(small_pattern, package.synopsis_lower);
 
             // Description: weight 2
-            sub_score += 2 * score_string(small_pattern, package.description);
+            sub_score += 2 * score_string(small_pattern, package.description_lower);
 
             if (sub_score == 0) // all patterns should be found
             {
