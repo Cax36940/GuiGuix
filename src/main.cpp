@@ -765,13 +765,28 @@ float draw_category_page_profiles(float y)
         }
     }
 
-    y -= 20.0f;
     for (size_t i = 0; i < profiles.size(); ++i)
     {
         ProfileStruct &profile = profiles[i];
+        bool delete_profile = false;
+        y += 20.0f;
+        const float profile_name_y = y;
+        y += TextBox({40.0f, profile_name_y}, profile.name.c_str(), style_profile_name);
 
-        y += 40.0f;
-        y += TextBox({40.0f, y}, profile.name.c_str(), style_profile_name);
+        const Vector2 profile_name_size = MeasureTextEx(get_font(style_profile_name.font_size, style_profile_name.font_mode), profile.name.c_str(), style_profile_name.font_size, 0.0f);
+
+        if (Button({profile_name_size.x + 60.0f, profile_name_y - 5.0f, 100.0f, 25.0f}, "Modify"))
+        {
+            modify_profile = &profile;
+        }
+
+        if (Button({profile_name_size.x + 180.0f, profile_name_y - 5.0f, 100.0f, 25.0f}, "Delete"))
+        {
+            const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
+            runCommand(command.c_str());
+            delete_profile = true;
+        }
+
         y += 10.0f;
         y += TextBox({40.0f, y}, profile.folder_path.c_str(), style_profile_path);
         y += 10.0f;
@@ -796,19 +811,11 @@ float draw_category_page_profiles(float y)
             y += 10.0f;
         }
 
-        if (Button({40.0f, y, 100.0f, 50.0f}, "Modify"))
+        if (delete_profile)
         {
-            modify_profile = &profile;
-        }
-
-        if (Button({160.0f, y, 100.0f, 50.0f}, "Delete"))
-        {
-            const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
-            runCommand(command.c_str());
             profiles.erase(profiles.begin() + i);
             --i;
         }
-        y += 50.0f;
     }
 
     return initial_y - y;
