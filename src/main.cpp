@@ -703,6 +703,13 @@ float draw_category_page_profiles(float y)
     TextInput({window_width / 2.0f - 120.0f, y - 20.0f}, window_width / 2.0f - 40.0f, path_string, is_text_input_selected, "Enter path");
     if (Button({window_width - 140.0f, y - 20.0f, 100.0f, 50.0f}, "Create"))
     {
+        const size_t last_slash_id = path_string.find_last_of('/');
+        const std::string profile_name = path_string.substr(last_slash_id + 1);
+        const std::string profile_path = path_string.substr(0, last_slash_id);
+
+        const std::string path_creation_command = "mkdir -p " + profile_path;
+        runCommand(path_creation_command.c_str());
+
         const std::string link_path1 = path_string + "-1-link";
         const std::string link_path2 = path_string + "-2-link";
 
@@ -717,7 +724,7 @@ float draw_category_page_profiles(float y)
         runCommand(command4.c_str());
         runCommand(command5.c_str());
 
-        profiles.push_back({path_string, path_string.substr(path_string.find_last_of('/') + 1), {}});
+        profiles.push_back({path_string, profile_name, {}});
     }
 
     y -= 20.0f;
