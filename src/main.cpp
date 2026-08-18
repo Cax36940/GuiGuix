@@ -932,8 +932,18 @@ int main()
         guix_exists = false;
     }
 
-    TIME_FUNCTION(init_packages());
-    TIME_FUNCTION(init_profiles());
+    if (guix_exists)
+    {
+        BeginDrawing();
+        TextBox({40.0f, 40.0f}, "Init installed packages...", style_page_title);
+        EndDrawing();
+        TIME_FUNCTION(init_packages());
+
+        BeginDrawing();
+        TextBox({40.0f, 90.0f}, "Init profiles...", style_page_title);
+        EndDrawing();
+        TIME_FUNCTION(init_profiles());
+    }
 
     float y_scroll = 0.0f;
 
