@@ -455,6 +455,7 @@ float TextInput(Vector2 pos, float width, std::string &text, bool &selected, con
 
 std::string runCommand(const char *command)
 {
+    printf("Exec command : %s\n", command);
     FILE *pipe = popen(command, "r");
     char buffer[4096];
     std::string result;
@@ -697,10 +698,33 @@ float draw_category_page_profiles(float y)
     y += 20.0f;
     y += TextBox({40.0f, y}, "Profiles", style_page_title);
 
-    y -= 20.0f;
-    for (std::vector<ProfileStruct>::iterator it = profiles.begin(); it != profiles.end(); ++it)
+    static std::string path_string = "~/guix_profiles/profile_name";
+    static bool is_text_input_selected = false;
+    TextInput({window_width / 2.0f - 120.0f, y - 20.0f}, window_width / 2.0f - 40.0f, path_string, is_text_input_selected, "Enter path");
+    if (Button({window_width - 140.0f, y - 20.0f, 100.0f, 50.0f}, "Create"))
     {
-        ProfileStruct &profile = *it;
+        const std::string link_path1 = path_string + "-1-link";
+        const std::string link_path2 = path_string + "-2-link";
+
+        const std::string command1 = "guix package -p " + path_string + " -i bash-static";
+        const std::string command2 = "guix package -p " + path_string + " -r bash-static";
+        const std::string command3 = "guix package -p " + path_string + " --delete-generations";
+        const std::string command4 = "mv " + link_path2 + " " + link_path1;
+        const std::string command5 = "ln -sfn " + link_path1 + " " + path_string;
+        runCommand(command1.c_str());
+        runCommand(command2.c_str());
+        runCommand(command3.c_str());
+        runCommand(command4.c_str());
+        runCommand(command5.c_str());
+
+        profiles.push_back({path_string, path_string.substr(path_string.find_last_of('/') + 1), {}});
+    }
+
+    y -= 20.0f;
+    for (size_t i = 0; i < profiles.size(); ++i)
+    {
+        ProfileStruct &profile = profiles[i];
+
         y += 40.0f;
         y += TextBox({40.0f, y}, profile.name.c_str(), style_profile_name);
         y += 10.0f;
@@ -727,15 +751,17 @@ float draw_category_page_profiles(float y)
             y += 10.0f;
         }
 
-        if (Button({40.0f, y, 100.0f, 50.0f}, "Delete"))
+        if (Button({40.0f, y, 100.0f, 50.0f}, "Modify"))
+        {
+            modify_profile = &profile;
+        }
+
+        if (Button({160.0f, y, 100.0f, 50.0f}, "Delete"))
         {
             const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
             runCommand(command.c_str());
-            profiles.erase(it);
-        }
-        if (Button({160.0f, y, 100.0f, 50.0f}, "Modify"))
-        {
-            modify_profile = &profile;
+            profiles.erase(profiles.begin() + i);
+            --i;
         }
         y += 50.0f;
     }
