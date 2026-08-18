@@ -464,8 +464,18 @@ struct ProfileStruct
 {
     std::string folder_path;
     std::string name;
-    std::vector<std::string> packages;
+    std::vector<const Package *> packages;
 };
+
+std::string get_package_name_at_version(const Package &package)
+{
+    return std::string(package.name) + "@" + std::string(package.version);
+}
+
+std::string get_package_name_version(const Package &package)
+{
+    return std::string(package.name) + " " + std::string(package.version);
+}
 
 std::vector<ProfileStruct> profiles;
 
@@ -507,7 +517,7 @@ float draw_page_modify_profile(float y)
         {
             if (delete_list[i])
             {
-                delete_package_list_str += modify_profile->packages[i];
+                delete_package_list_str += get_package_name_at_version(*modify_profile->packages[i]);
                 delete_package_list_str += " ";
             }
         }
@@ -517,7 +527,7 @@ float draw_page_modify_profile(float y)
         {
             if (install_list_bool[i])
             {
-                install_package_list_str += install_list[i]->name;
+                install_package_list_str += get_package_name_at_version(*install_list[i]);
                 install_package_list_str += " ";
             }
         }
@@ -548,7 +558,7 @@ float draw_page_modify_profile(float y)
             {
                 if (install_list_bool[i])
                 {
-                    modify_profile->packages.emplace_back(install_list[i]->name);
+                    modify_profile->packages.emplace_back(install_list[i]);
                 }
             }
             install_list.clear();
@@ -578,11 +588,11 @@ float draw_page_modify_profile(float y)
 
     for (size_t i = 0; i < modify_profile->packages.size(); ++i)
     {
-        const std::string &package_name = modify_profile->packages[i];
+        const std::string &package_name_version = get_package_name_version(*modify_profile->packages[i]);
         const float delete_box_x = 70.0f;
         const float delete_box_y = left_y - 4.0f;
 
-        left_y += TextBox({delete_box_x + 20.0f + 20.0f, left_y}, package_name.c_str(), style_profile_name);
+        left_y += TextBox({delete_box_x + 20.0f + 20.0f, left_y}, package_name_version.c_str(), style_profile_name);
 
         if (delete_list[i])
         {
@@ -608,11 +618,11 @@ float draw_page_modify_profile(float y)
 
     for (size_t i = 0; i < install_list.size(); ++i)
     {
-        const std::string_view &package_name = install_list[i]->name;
+        const std::string_view &package_name_version = get_package_name_version(*install_list[i]);
         const float install_box_x = window_width / 2.0f + 30.0f;
         const float install_box_y = right_y - 4.0f;
 
-        right_y += TextBox({install_box_x + 20.0f + 20.0f, right_y}, package_name.data(), style_profile_name);
+        right_y += TextBox({install_box_x + 20.0f + 20.0f, right_y}, package_name_version.data(), style_profile_name);
 
         if (install_list_bool[i])
         {
@@ -720,10 +730,10 @@ float draw_category_page_profiles(float y)
                 y += TextBox({40.0f, y}, "Installed packages:", style_profile_name);
             }
             y += 10.0f;
-            for (std::vector<std::string>::iterator pack_it = profile.packages.begin(); pack_it != profile.packages.end(); ++pack_it)
+            for (std::vector<const Package *>::iterator pack_it = profile.packages.begin(); pack_it != profile.packages.end(); ++pack_it)
             {
-                const std::string &package_name = *pack_it;
-                y += TextBox({40.0f, y}, ("- " + package_name).c_str(), style_profile_package);
+                const Package *package = *pack_it;
+                y += TextBox({40.0f, y}, ("- " + get_package_name_version(*package)).c_str(), style_profile_package);
                 y += 10.0f;
             }
             y += 10.0f;
@@ -831,9 +841,28 @@ float NavBar(float y)
     return button_height;
 }
 
-std::vector<std::string> get_installed_package(const std::string profile_path)
+Package *find_package(std::string_view name, std::string_view version)
 {
-    std::vector<std::string> installed_package;
+    auto it = std::lower_bound(all_packages.begin(), all_packages.end(), name,
+                               [](const Package &package, std::string_view name)
+                               {
+                                   return package.name < name;
+                               });
+
+    for (; it != all_packages.end() && it->name == name; ++it)
+    {
+        if (it->version == version)
+        {
+            return &*it;
+        }
+    }
+
+    return nullptr;
+}
+
+std::vector<const Package *> get_installed_package(const std::string profile_path)
+{
+    std::vector<const Package *> installed_package;
     const std::string command = "guix package -p " + profile_path + " --list-installed";
     const std::string packages_str = runCommand(command.c_str());
 
@@ -843,16 +872,31 @@ std::vector<std::string> get_installed_package(const std::string profile_path)
     {
         const size_t name_begin = end;
         size_t name_end = 0;
+        size_t version_begin = 0;
+        size_t version_end = 0;
         while (packages_raw[end] != '\n' && packages_raw[end] != '\0')
         {
             if (name_end == 0 && packages_raw[end] == '\t')
             {
                 name_end = end;
+                version_begin = end + 1;
             }
             ++end;
+            if (version_begin != 0 && version_end == 0 && packages_raw[end] == '\t')
+            {
+                version_end = end;
+            }
         }
 
-        installed_package.push_back(packages_str.substr(name_begin, name_end - name_begin));
+        const std::string_view name = packages_str.substr(name_begin, name_end - name_begin);
+        const std::string_view version = packages_str.substr(version_begin, version_end - version_begin);
+
+        // find package with name and version in all_ackages
+        const Package *package = find_package(name, version);
+        if (package != nullptr)
+        {
+            installed_package.push_back(package);
+        }
         ++end;
     }
 
@@ -900,8 +944,8 @@ int main()
         guix_exists = false;
     }
 
-    TIME_FUNCTION(init_profiles());
     TIME_FUNCTION(init_packages());
+    TIME_FUNCTION(init_profiles());
 
     float y_scroll = 0.0f;
 
