@@ -674,6 +674,14 @@ float draw_page_modify_profile(float y)
                         break;
                     }
                 }
+                for (const Package *p : modify_profile->packages)
+                {
+                    if (p == result.package)
+                    {
+                        is_in_list = true;
+                        break;
+                    }
+                }
                 if (!is_in_list)
                 {
                     install_list.push_back(result.package);
