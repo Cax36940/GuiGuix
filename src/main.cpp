@@ -710,19 +710,42 @@ float draw_category_page_profiles(float y)
         const std::string path_creation_command = "mkdir -p " + profile_path;
         runCommand(path_creation_command.c_str());
 
-        const std::string link_path1 = path_string + "-1-link";
-        const std::string link_path2 = path_string + "-2-link";
+        const ProfileStruct *empty_profile = nullptr;
 
-        const std::string command1 = "guix package -p " + path_string + " -i bash-static";
-        const std::string command2 = "guix package -p " + path_string + " -r bash-static";
-        const std::string command3 = "guix package -p " + path_string + " --delete-generations";
-        const std::string command4 = "mv " + link_path2 + " " + link_path1;
-        const std::string command5 = "ln -sfn " + link_path1 + " " + path_string;
-        runCommand(command1.c_str());
-        runCommand(command2.c_str());
-        runCommand(command3.c_str());
-        runCommand(command4.c_str());
-        runCommand(command5.c_str());
+        for (const ProfileStruct &profile : profiles)
+        {
+            if (profile.packages.empty())
+            {
+                empty_profile = &profile;
+            }
+        }
+
+        if (empty_profile)
+        {
+            const std::string link_path1 = path_string + "-1-link";
+
+            const std::string command1 = "ln -s " + empty_profile->folder_path + "-1-link " + link_path1;
+            const std::string command2 = "ln -sfn " + link_path1 + " " + path_string;
+
+            runCommand(command1.c_str());
+            runCommand(command2.c_str());
+        }
+        else
+        {
+            const std::string link_path1 = path_string + "-1-link";
+            const std::string link_path2 = path_string + "-2-link";
+
+            const std::string command1 = "guix package -p " + path_string + " -i bash-static";
+            const std::string command2 = "guix package -p " + path_string + " -r bash-static";
+            const std::string command3 = "guix package -p " + path_string + " --delete-generations";
+            const std::string command4 = "mv " + link_path2 + " " + link_path1;
+            const std::string command5 = "ln -sfn " + link_path1 + " " + path_string;
+            runCommand(command1.c_str());
+            runCommand(command2.c_str());
+            runCommand(command3.c_str());
+            runCommand(command4.c_str());
+            runCommand(command5.c_str());
+        }
 
         profiles.push_back({path_string, profile_name, {}});
     }
