@@ -698,56 +698,71 @@ float draw_category_page_profiles(float y)
     y += 20.0f;
     y += TextBox({40.0f, y}, "Profiles", style_page_title);
 
-    static std::string path_string = "~/guix_profiles/profile_name";
+    static std::string text_box_string = "~/guix_profiles/profile_name";
     static bool is_text_input_selected = false;
-    TextInput({window_width / 2.0f - 120.0f, y - 20.0f}, window_width / 2.0f - 40.0f, path_string, is_text_input_selected, "Enter path");
+    TextInput({window_width / 2.0f - 120.0f, y - 20.0f}, window_width / 2.0f - 40.0f, text_box_string, is_text_input_selected, "Enter path");
     if (Button({window_width - 140.0f, y - 20.0f, 100.0f, 50.0f}, "Create"))
     {
-        const size_t last_slash_id = path_string.find_last_of('/');
-        const std::string profile_name = path_string.substr(last_slash_id + 1);
-        const std::string profile_path = path_string.substr(0, last_slash_id);
-
-        const std::string path_creation_command = "mkdir -p " + profile_path;
-        runCommand(path_creation_command.c_str());
-
-        const ProfileStruct *empty_profile = nullptr;
-
+        const std::string path_string = runCommand(("printf " + text_box_string).c_str());
+        bool profile_exists = false;
         for (const ProfileStruct &profile : profiles)
         {
-            if (profile.packages.empty())
+            if (profile.folder_path == path_string)
             {
-                empty_profile = &profile;
+                profile_exists = true;
+                break;
             }
         }
 
-        if (empty_profile)
+        if (!profile_exists)
         {
-            const std::string link_path1 = path_string + "-1-link";
 
-            const std::string command1 = "ln -s " + empty_profile->folder_path + "-1-link " + link_path1;
-            const std::string command2 = "ln -sfn " + link_path1 + " " + path_string;
+            const size_t last_slash_id = path_string.find_last_of('/');
+            const std::string profile_name = path_string.substr(last_slash_id + 1);
+            const std::string profile_path = path_string.substr(0, last_slash_id);
 
-            runCommand(command1.c_str());
-            runCommand(command2.c_str());
+            const std::string path_creation_command = "mkdir -p " + profile_path;
+            runCommand(path_creation_command.c_str());
+
+            const ProfileStruct *empty_profile = nullptr;
+
+            for (const ProfileStruct &profile : profiles)
+            {
+                if (profile.packages.empty())
+                {
+                    empty_profile = &profile;
+                }
+            }
+
+            if (empty_profile)
+            {
+                const std::string link_path1 = path_string + "-1-link";
+
+                const std::string command1 = "ln -s " + empty_profile->folder_path + " " + link_path1;
+                const std::string command2 = "ln -sfn " + link_path1 + " " + path_string;
+
+                runCommand(command1.c_str());
+                runCommand(command2.c_str());
+            }
+            else
+            {
+                const std::string link_path1 = path_string + "-1-link";
+                const std::string link_path2 = path_string + "-2-link";
+
+                const std::string command1 = "guix package -p " + path_string + " -i bash-static";
+                const std::string command2 = "guix package -p " + path_string + " -r bash-static";
+                const std::string command3 = "guix package -p " + path_string + " --delete-generations";
+                const std::string command4 = "mv " + link_path2 + " " + link_path1;
+                const std::string command5 = "ln -sfn " + link_path1 + " " + path_string;
+                runCommand(command1.c_str());
+                runCommand(command2.c_str());
+                runCommand(command3.c_str());
+                runCommand(command4.c_str());
+                runCommand(command5.c_str());
+            }
+
+            profiles.push_back({path_string, profile_name, {}});
         }
-        else
-        {
-            const std::string link_path1 = path_string + "-1-link";
-            const std::string link_path2 = path_string + "-2-link";
-
-            const std::string command1 = "guix package -p " + path_string + " -i bash-static";
-            const std::string command2 = "guix package -p " + path_string + " -r bash-static";
-            const std::string command3 = "guix package -p " + path_string + " --delete-generations";
-            const std::string command4 = "mv " + link_path2 + " " + link_path1;
-            const std::string command5 = "ln -sfn " + link_path1 + " " + path_string;
-            runCommand(command1.c_str());
-            runCommand(command2.c_str());
-            runCommand(command3.c_str());
-            runCommand(command4.c_str());
-            runCommand(command5.c_str());
-        }
-
-        profiles.push_back({path_string, profile_name, {}});
     }
 
     y -= 20.0f;
