@@ -125,6 +125,14 @@ bool Button(Rectangle rect, const char *text = "Default", bool selected = false)
     return clicked;
 }
 
+void CheckBox(Vector2 pos, bool &b)
+{
+    if (Button({pos.x, pos.y, 20.0f, 20.0f}, b ? "X" : " "))
+    {
+        b = !b;
+    }
+}
+
 std::vector<std::string_view> compute_lines(const char *text)
 {
     std::vector<std::string_view> lines;
@@ -484,9 +492,9 @@ ProfileStruct *modify_profile = nullptr;
 float draw_page_modify_profile(float y)
 {
     const float initial_y = y;
-    static std::vector<bool> delete_list;
+    static std::vector<char> delete_list;
     static std::vector<const Package *> install_list;
-    static std::vector<bool> install_list_bool;
+    static std::vector<char> install_list_bool;
     static std::string search_string = "";
     static bool is_search_input_selected = false;
     static std::vector<SearchResult> displayed_packages = search(all_packages, {});
@@ -592,22 +600,8 @@ float draw_page_modify_profile(float y)
         const float delete_box_x = 70.0f;
         const float delete_box_y = left_y - 4.0f;
 
+        CheckBox({delete_box_x, delete_box_y}, (bool &)delete_list[i]);
         left_y += TextBox({delete_box_x + 20.0f + 20.0f, left_y}, package_name_version.c_str(), style_profile_name);
-
-        if (delete_list[i])
-        {
-            if (Button({delete_box_x, delete_box_y, 20.0f, 20.0f}, "X"))
-            {
-                delete_list[i] = false;
-            }
-        }
-        else
-        {
-            if (Button({delete_box_x, delete_box_y, 20.0f, 20.0f}, " "))
-            {
-                delete_list[i] = true;
-            }
-        }
 
         left_y += 10.0f;
     }
@@ -622,22 +616,8 @@ float draw_page_modify_profile(float y)
         const float install_box_x = window_width / 2.0f + 30.0f;
         const float install_box_y = right_y - 4.0f;
 
+        CheckBox({install_box_x, install_box_y}, (bool &)install_list_bool[i]);
         right_y += TextBox({install_box_x + 20.0f + 20.0f, right_y}, package_name_version.data(), style_profile_name);
-
-        if (install_list_bool[i])
-        {
-            if (Button({install_box_x, install_box_y, 20.0f, 20.0f}, "X"))
-            {
-                install_list_bool[i] = false;
-            }
-        }
-        else
-        {
-            if (Button({install_box_x, install_box_y, 20.0f, 20.0f}, " "))
-            {
-                install_list_bool[i] = true;
-            }
-        }
 
         right_y += 10.0f;
     }
