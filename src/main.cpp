@@ -894,14 +894,6 @@ float draw_category_page_packages(float y)
     return initial_y - y;
 }
 
-float draw_category_page_store(float y)
-{
-    const float initial_y = y;
-    y += 20.0f;
-    y += TextBox({40.0f, y}, "Store", style_page_title);
-    return initial_y - y;
-}
-
 static std::function<float(float)> draw_current_page = draw_category_page_profiles;
 
 bool operator==(const std::function<float(float)> &a, const std::function<float(float)> &b)
@@ -912,7 +904,7 @@ bool operator==(const std::function<float(float)> &a, const std::function<float(
 float NavBar(float y)
 {
     const float button_height = 50.0f;
-    const float button_width = window_width / 3.0f;
+    const float button_width = window_width / 2.0f;
     Rectangle rect = {0.0f, y, button_width, button_height};
 
     if (Button(rect, "Profiles", draw_current_page == draw_category_page_profiles))
@@ -924,12 +916,6 @@ float NavBar(float y)
     if (Button(rect, "Packages", draw_current_page == draw_category_page_packages))
     {
         draw_current_page = draw_category_page_packages;
-    }
-    rect.x += button_width;
-
-    if (Button(rect, "Store", draw_current_page == draw_category_page_store))
-    {
-        draw_current_page = draw_category_page_store;
     }
 
     return button_height;
