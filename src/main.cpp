@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 #include <vector>
 
 #include "search.cpp"
@@ -785,6 +786,33 @@ float draw_category_page_profiles(float y)
             const std::string command = "rm " + profile.folder_path + " " + profile.folder_path + "-*-link";
             runCommand(command.c_str());
             delete_profile = true;
+        }
+
+        if (Button({profile_name_size.x + 300.0f, profile_name_y - 5.0f, 100.0f, 25.0f}, "Terminal"))
+        {
+            pid_t pid = fork();
+
+            if (pid == 0)
+            {
+                std::string pwd = runCommand("pwd");
+                pwd = pwd.substr(0, pwd.size() - 1); // remove last '\n'
+
+                const std::string sandbox_path = pwd + "/guix_sandbox/" + profile.name;
+                runCommand(("mkdir -p " + sandbox_path).c_str());
+
+                const std::string profile_arg = "--profile=" + profile.folder_path;
+                const std::string user_arg = "--user=" + profile.name;
+
+                // clang-format off
+                const std::string command =
+                    "cd \"" + sandbox_path + "\"; "
+                    "export HOME=\"$PWD\"; "
+                    "exec guix shell --container " + profile_arg + " " + user_arg;
+                // clang-format on
+
+                execlp("gnome-terminal", "gnome-terminal", "--",
+                       "bash", "-c", command.c_str(), nullptr);
+            }
         }
 
         y += 10.0f;
