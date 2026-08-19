@@ -954,6 +954,8 @@ Package *find_package(std::string_view name, std::string_view version)
     return nullptr;
 }
 
+std::vector<Package> unregistered_packages;
+std::string unregistered_packages_str;
 std::vector<const Package *> get_installed_package(const std::string profile_path)
 {
     std::vector<const Package *> installed_package;
@@ -982,18 +984,48 @@ std::vector<const Package *> get_installed_package(const std::string profile_pat
             }
         }
 
-        const std::string_view name = packages_str.substr(name_begin, name_end - name_begin);
-        const std::string_view version = packages_str.substr(version_begin, version_end - version_begin);
+        const std::string_view name(packages_str.data() + name_begin, name_end - name_begin);
+        const std::string_view version(packages_str.data() + version_begin, version_end - version_begin);
 
         // find package with name and version in all_ackages
-        const Package *package = find_package(name, version);
+        Package *package = find_package(name, version);
         if (package != nullptr)
         {
             installed_package.push_back(package);
         }
+        else
+        {
+            if (unregistered_packages.size() == 0)
+            {
+                unregistered_packages.reserve(256);
+                unregistered_packages_str.reserve(2048);
+            }
+
+            const std::string package_str = std::string(name) + '\0' + std::string(version) + '\0';
+            if (unregistered_packages_str.size() + package_str.size() <= unregistered_packages_str.capacity())
+            {
+                const size_t package_name_begin = unregistered_packages_str.size();
+                const size_t package_version_begin = package_name_begin + name.size() + 1;
+                unregistered_packages_str += package_str;
+
+                if (unregistered_packages.size() + 1 <= unregistered_packages.capacity())
+                {
+                    const std::string_view package_name(unregistered_packages_str.data() + package_name_begin, name.size());
+                    const std::string_view package_version(unregistered_packages_str.data() + package_version_begin, version.size());
+                    unregistered_packages.push_back({package_name, package_version, {}, {}, {}, {}, {}});
+
+                    installed_package.push_back(&unregistered_packages.back());
+                }
+            }
+        }
         ++end;
     }
 
+    for (const Package *p : installed_package)
+    {
+        printf("name : %s\n", p->name.data());
+        printf("version : %s\n", p->version.data());
+    }
     return installed_package;
 }
 
@@ -1019,6 +1051,7 @@ void init_profiles()
         const std::string path = profiles_str.substr(begin, end - begin);
         const std::string name = profiles_str.substr(name_pos, end - name_pos);
         profiles.push_back({path, name, get_installed_package(path)});
+
         end++;
         begin = end;
     }
