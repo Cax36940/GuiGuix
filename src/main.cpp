@@ -972,16 +972,19 @@ std::vector<const Package *> get_installed_package(const std::string profile_pat
         size_t version_end = 0;
         while (packages_raw[end] != '\n' && packages_raw[end] != '\0')
         {
-            if (name_end == 0 && packages_raw[end] == '\t')
+            if (name_end == 0 && (packages_raw[end] == '\t' || packages_raw[end] == ' '))
             {
                 name_end = end;
-                version_begin = end + 1;
             }
-            ++end;
-            if (version_begin != 0 && version_end == 0 && packages_raw[end] == '\t')
+            else if (name_end != 0 && version_begin == 0 && (packages_raw[end] != '\t' && packages_raw[end] != ' '))
+            {
+                version_begin = end;
+            }
+            else if (version_begin != 0 && version_end == 0 && (packages_raw[end] == '\t' || packages_raw[end] == ' '))
             {
                 version_end = end;
             }
+            ++end;
         }
 
         const std::string_view name(packages_str.data() + name_begin, name_end - name_begin);
@@ -1021,11 +1024,6 @@ std::vector<const Package *> get_installed_package(const std::string profile_pat
         ++end;
     }
 
-    for (const Package *p : installed_package)
-    {
-        printf("name : %s\n", p->name.data());
-        printf("version : %s\n", p->version.data());
-    }
     return installed_package;
 }
 
