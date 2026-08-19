@@ -614,12 +614,12 @@ float draw_page_modify_profile(float y)
 
     for (size_t i = 0; i < install_list.size(); ++i)
     {
-        const std::string_view &package_name_version = get_package_name_version(*install_list[i]);
+        const std::string &package_name_version = get_package_name_version(*install_list[i]);
         const float install_box_x = window_width / 2.0f + 30.0f;
         const float install_box_y = right_y - 4.0f;
 
         CheckBox({install_box_x, install_box_y}, (bool &)install_list_bool[i]);
-        right_y += TextBox({install_box_x + 20.0f + 20.0f, right_y}, package_name_version.data(), style_profile_name);
+        right_y += TextBox({install_box_x + 20.0f + 20.0f, right_y}, package_name_version.c_str(), style_profile_name);
 
         right_y += 10.0f;
     }
