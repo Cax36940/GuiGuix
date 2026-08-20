@@ -15,3 +15,9 @@ lib :
 	cp raylib-6.0/src/libraylib.a lib/libraylib.a
 
 	rm -r raylib-6.0
+
+clear :
+	rm -rf ./guix_sandbox
+	rm -rf ./build
+	rm -rf ./include
+	rm -rf ./lib
