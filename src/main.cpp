@@ -491,6 +491,33 @@ std::vector<ProfileStruct> profiles;
 
 ProfileStruct *modify_profile = nullptr;
 
+void launch_profile_terminal(const ProfileStruct &profile)
+{
+    pid_t pid = fork();
+
+    if (pid == 0)
+    {
+        std::string pwd = runCommand("pwd");
+        pwd = pwd.substr(0, pwd.size() - 1); // remove last '\n'
+
+        const std::string sandbox_path = pwd + "/guix_sandbox/" + profile.name;
+        runCommand(("mkdir -p " + sandbox_path).c_str());
+
+        const std::string profile_arg = "--profile=" + profile.folder_path;
+        const std::string user_arg = "--user=" + profile.name;
+
+        // clang-format off
+                const std::string command =
+                    "cd \"" + sandbox_path + "\"; "
+                    "export HOME=\"$PWD\"; "
+                    "exec guix shell --container " + profile_arg + " " + user_arg;
+        // clang-format on
+
+        execlp("gnome-terminal", "gnome-terminal", "--",
+               "bash", "-c", command.c_str(), nullptr);
+    }
+}
+
 float draw_page_modify_profile(float y)
 {
     const float initial_y = y;
@@ -518,6 +545,10 @@ float draw_page_modify_profile(float y)
         install_list_bool.clear();
         search_string = "";
         return 0.0f;
+    }
+    if (Button({window_width - 160.0f - 100.0f, y, 100.0f, 50.0f}, "Terminal"))
+    {
+        launch_profile_terminal(*modify_profile);
     }
 
     if (Button({window_width - 40.0f - 100.0f, y, 100.0f, 50.0f}, "Apply"))
@@ -790,29 +821,7 @@ float draw_category_page_profiles(float y)
 
         if (Button({profile_name_size.x + 300.0f, profile_name_y - 5.0f, 100.0f, 25.0f}, "Terminal"))
         {
-            pid_t pid = fork();
-
-            if (pid == 0)
-            {
-                std::string pwd = runCommand("pwd");
-                pwd = pwd.substr(0, pwd.size() - 1); // remove last '\n'
-
-                const std::string sandbox_path = pwd + "/guix_sandbox/" + profile.name;
-                runCommand(("mkdir -p " + sandbox_path).c_str());
-
-                const std::string profile_arg = "--profile=" + profile.folder_path;
-                const std::string user_arg = "--user=" + profile.name;
-
-                // clang-format off
-                const std::string command =
-                    "cd \"" + sandbox_path + "\"; "
-                    "export HOME=\"$PWD\"; "
-                    "exec guix shell --container " + profile_arg + " " + user_arg;
-                // clang-format on
-
-                execlp("gnome-terminal", "gnome-terminal", "--",
-                       "bash", "-c", command.c_str(), nullptr);
-            }
+            launch_profile_terminal(profile);
         }
 
         y += 10.0f;
