@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <string_view>
